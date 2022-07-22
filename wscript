@@ -15,17 +15,17 @@ def configure(conf):
 def build(bld):
     bld.recurse('jni')
 
-    bld(rule = 'wget http://download.forge.ow2.org/sat4j/${TGT}',
+    bld(rule = 'wget http://dllegacy.ow2.org/sat4j/${TGT}',
         target = 'sat4j-core-v20130525.zip')
     bld(rule = 'unzip ${SRC} -x *src.jar',
         source = 'sat4j-core-v20130525.zip',
         target = 'org.sat4j.core.jar')
-    bld(rule = 'wget http://download.forge.ow2.org/sat4j/${TGT}',
+    bld(rule = 'wget http://dllegacy.ow2.org/sat4j/${TGT}',
         target = 'sat4j-maxsat-v20130525.zip')
     bld(rule = 'unzip ${SRC} -x *src.jar',
         source = 'sat4j-maxsat-v20130525.zip',
         target = 'org.sat4j.maxsat.jar')
-    bld(rule = 'wget http://download.forge.ow2.org/sat4j/${TGT}',
+    bld(rule = 'wget http://dllegacy.ow2.org/sat4j/${TGT}',
         target = 'sat4j-pb-v20130525.zip')
     bld(rule = 'unzip ${SRC} -x *src.jar',
         source = 'sat4j-pb-v20130525.zip',

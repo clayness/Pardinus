@@ -18,6 +18,7 @@ import kodkod.ast.MultiplicityFormula;
 import kodkod.ast.NaryExpression;
 import kodkod.ast.NaryFormula;
 import kodkod.ast.NotFormula;
+import kodkod.ast.QuantifiedFormula;
 import kodkod.ast.UnaryExpression;
 import kodkod.instance.Tuple;
 import kodkod.instance.TupleSet;
@@ -113,40 +114,70 @@ public class DownwardExpressionBoundPropagator extends BoundPropagator {
 			TupleSet ts = bounds.lowerBound(binExpr);
 			for (Tuple p : bounds.upperBound(binExpr.left())) {
 				for (Tuple s : bounds.upperBound(binExpr.right())) {
-					//@formatter:off
-					Tuple t = factory().tuple(Stream.concat(
-								tupleStream(p, 0, p.arity() - 1),
-								tupleStream(s, 1, s.arity()))
-							.collect(Collectors.toList()));
-					//@formatter:on
-					if (ts.contains(t)) {
-						prefixes.computeIfAbsent(t, k -> new ArrayList<>()).add(p);
-						suffixes.computeIfAbsent(t, k -> new ArrayList<>()).add(s);
+					if (p.atom(p.arity() - 1).equals(s.atom(0))) {
+						//@formatter:off
+						Tuple t = factory().tuple(Stream.concat(
+									tupleStream(p, 0, p.arity() - 1),
+									tupleStream(s, 1, s.arity()))
+								.collect(Collectors.toList()));
+						//@formatter:on
+						if (ts.contains(t)) {
+							prefixes.computeIfAbsent(t, k -> new ArrayList<>()).add(p);
+							suffixes.computeIfAbsent(t, k -> new ArrayList<>()).add(s);
+						}
 					}
 				}
 			}
 			prefixes.values().stream().filter(l -> l.size() == 1).forEach(leftLower::addAll);
 			suffixes.values().stream().filter(r -> r.size() == 1).forEach(rightLower::addAll);
 			// what do we know of the upper bounds in this case?
-			// - any tuple in the upper bound of the left child with a prefix
-			// not found in the upper bound of the parent can be removed
-			// (same w/ suffix and right child)
-			//@formatter:off
-			Map<Tuple, List<Tuple>> topPreUpper   = subsequence(bounds.upperBound(binExpr), 0, binExpr.left().arity() - 1);
-			Map<Tuple, List<Tuple>> topSufUpper   = subsequence(bounds.upperBound(binExpr), binExpr.left().arity() - 1, binExpr.arity());
-			Map<Tuple, List<Tuple>> leftPreUpper  = subsequence(bounds.upperBound(binExpr.left()), 0, binExpr.left().arity() - 1);
-			Map<Tuple, List<Tuple>> rightSufUpper = subsequence(bounds.upperBound(binExpr.right()), 1, binExpr.right().arity());
+			// - for any of the tuples that COULD be the result of this join
+			// (i.e., the join set for the upper bounds), if that tuple is
+			// not in the upper bound of the parent AND that tuples' suffix
+			// is in the lower bound of the right hand expression, then
+			// that tuple's prefix can be removed from the left hand
+			// expression's upper bound (mutatis mutandis for right hand)
+			TupleSet topUpper = bounds.upperBound(binExpr);
 			leftUpper = bounds.upperBound(binExpr.left()).clone();
-			leftPreUpper.keySet().stream()
-				.filter(p -> !topPreUpper.containsKey(p))
-				.map(leftPreUpper::get)
-				.forEach(leftUpper::removeAll);
 			rightUpper = bounds.upperBound(binExpr.right()).clone();
-			rightSufUpper.keySet().stream()
-				.filter(s -> !topSufUpper.containsKey(s))
-				.map(rightSufUpper::get)
-				.forEach(rightUpper::removeAll);
-			//@formatter:on
+			for (Tuple p : bounds.upperBound(binExpr.left())) {
+				boolean found = false;
+				int i = 0;
+				for (Tuple s : rightLower) {
+					if (p.atom(p.arity() - 1).equals(s.atom(0))) {
+						Tuple j = factory()
+								.tuple(Stream.concat(tupleStream(p, 0, p.arity() - 1), tupleStream(s, 1, s.arity()))
+										.collect(Collectors.toList()));
+						if (topUpper.contains(j)) {
+							found = true;
+							break;
+						}
+						i++;
+					}
+				}
+				if (!found && i > 0 && !leftLower.contains(p)) {
+					leftUpper.remove(p);
+				}
+			}
+			for (Tuple s : bounds.upperBound(binExpr.right())) {
+				boolean found = false;
+				int i = 0;
+				for (Tuple p : leftLower) {
+					if (p.atom(p.arity() - 1).equals(s.atom(0))) {
+						Tuple j = factory()
+								.tuple(Stream.concat(tupleStream(p, 0, p.arity() - 1), tupleStream(s, 1, s.arity()))
+										.collect(Collectors.toList()));
+						if (topUpper.contains(j)) {
+							found = true;
+							break;
+						}
+						i++;
+					}
+				}
+				if (!found && i > 0 && !rightLower.contains(s)) {
+					rightUpper.remove(s);
+				}
+			}
 			bounds.bound(binExpr.left(), leftLower, leftUpper);
 			bounds.bound(binExpr.right(), rightLower, rightUpper);
 			break;
@@ -294,6 +325,12 @@ public class DownwardExpressionBoundPropagator extends BoundPropagator {
 		bounds.bound(ifExpr.thenExpr(), thenLower, thenUpper);
 		bounds.bound(ifExpr.elseExpr(), elseLower, elseUpper);
 		super.visit(ifExpr);
+	}
+
+	@Override
+	public void visit(QuantifiedFormula quantFormula) {
+		// we can't necessariliy say anything about quantified formulas,
+		// so stop the traversal
 	}
 
 	@Override

@@ -23,19 +23,23 @@ public class ExpressionBounds {
 	}
 
 	public TupleSet lowerBound(Expression expr) {
+		TupleSet retval;
 		if (expr instanceof Relation) {
-			return this.lowers.getOrDefault(expr, this.bounds.lowerBound((Relation) expr));
+			retval = this.lowers.getOrDefault(expr, this.bounds.lowerBound((Relation) expr));
 		} else {
-			return this.lowers.getOrDefault(expr, null);
+			retval = this.lowers.getOrDefault(expr, null);
 		}
+		return retval == null ? bounds.universe().factory().noneOf(expr.arity()) : retval;
 	}
 
 	public TupleSet upperBound(Expression expr) {
+		TupleSet retval;
 		if (expr instanceof Relation) {
-			return this.uppers.getOrDefault(expr, this.bounds.upperBound((Relation) expr));
+			retval = this.uppers.getOrDefault(expr, this.bounds.upperBound((Relation) expr));
 		} else {
-			return this.uppers.getOrDefault(expr, null);
+			retval = this.uppers.getOrDefault(expr, null);
 		}
+		return retval == null ? bounds.universe().factory().allOf(expr.arity()) : retval;
 	}
 
 	public void bound(Expression expr, TupleSet lowerBound, TupleSet upperBound) {
@@ -56,10 +60,10 @@ public class ExpressionBounds {
 		if ((!Objects.equals(currentLower, lowerBound) || !Objects.equals(currentUpper, upperBound))) {
 			if (expr instanceof Relation) {
 				this.bounds.bound((Relation) expr, lowerBound, upperBound);
-				System.out.println("changing: " + expr.toString());
-				System.out.printf("  l: %s -> %s%n", currentLower == null ? "(null)" : currentLower.toString(),
+				System.err.println("changing: " + expr.toString());
+				System.err.printf("  l: %s -> %s%n", currentLower == null ? "(null)" : currentLower.toString(),
 						lowerBound == null ? "(null)" : lowerBound.toString());
-				System.out.printf("  u: %s -> %s%n", currentUpper == null ? "(null)" : currentUpper.toString(),
+				System.err.printf("  u: %s -> %s%n", currentUpper == null ? "(null)" : currentUpper.toString(),
 						upperBound == null ? "(null)" : upperBound.toString());
 				this.changed = true;
 			} else {

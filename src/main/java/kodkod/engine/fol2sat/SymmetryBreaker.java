@@ -71,7 +71,7 @@ import kodkod.util.ints.Ints;
  * @author Emina Torlak
  * @modified Nuno Macedo // [HASLab] decomposed model finding
  */
-final class SymmetryBreaker {
+public final class SymmetryBreaker {
 	private final Bounds stage_bounds; // [HASLab]
 	private final Bounds bounds;
 	private final Set<IntSet> symmetries;
@@ -88,7 +88,7 @@ final class SymmetryBreaker {
 	 * @ensures reporter.detectedSymmetries(this.symmteries')
 	 * @ensures this.bounds' = bounds && this.symmetries' = SymmetryDetector.partition(bounds) && no this.broken'
 	 **/
-	SymmetryBreaker(Bounds bounds, Reporter reporter) {
+	public SymmetryBreaker(Bounds bounds, Reporter reporter) {
 		// [HASLab] everything must be resolved at this stage
 		if (bounds instanceof PardinusBounds) {
 			assert ((PardinusBounds) bounds).resolved();
@@ -160,7 +160,7 @@ final class SymmetryBreaker {
 	 * @return a map m such that m.keySet() in preds.values(), and for all predicates p in m.keySet(), the formulas
 	 * "p and [[this.bounds]]" and "m.get(p) and [[this.bounds']]" are equisatisfiable
 	 */
-	Map<RelationPredicate, Formula> breakMatrixSymmetries(Map<Name, Set<RelationPredicate>> preds, boolean aggressive) {
+	public Map<RelationPredicate, Formula> breakMatrixSymmetries(Map<Name, Set<RelationPredicate>> preds, boolean aggressive) {
 		final Set<RelationPredicate> totals = preds.get(TOTAL_ORDERING);
 		final Set<RelationPredicate> acyclics = preds.get(ACYCLIC);
 		final Map<RelationPredicate, Formula> broken = new IdentityHashMap<RelationPredicate, Formula>();
